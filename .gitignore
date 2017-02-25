@@ -1,0 +1,6 @@
+*.gcov
+*.gcda
+*.gcno
+*.dll
+*.so
+*.o
