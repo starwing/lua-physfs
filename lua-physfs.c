@@ -2,7 +2,7 @@
 #include <lua.h>
 #include <lauxlib.h>
 
-#include "physfs.h"
+#include "physfs/physfs.h"
 
 #include <stdlib.h>
 #include <string.h>
