@@ -14,17 +14,23 @@ dependencies = {}
 
 build = {
    type = "builtin",
+   platforms = {
+      macosx = {
+         type = "command",
+         build_command = "sh osxbuild.sh",
+      }
+   },
    modules = {
       physfs = {
          defines = {
             "PHYSFS_SUPPORTS_7Z",
-            --"PHYSFS_SUPPORTS_QPAK",
-            --"PHYSFS_SUPPORTS_GRP",
-            --"PHYSFS_SUPPORTS_HOG",
-            --"PHYSFS_SUPPORTS_MVL",
-            --"PHYSFS_SUPPORTS_WAD",
-            --"PHYSFS_SUPPORTS_SLB",
-            --"PHYSFS_SUPPORTS_ISO9660",
+            "PHYSFS_SUPPORTS_QPAK",
+            "PHYSFS_SUPPORTS_GRP",
+            "PHYSFS_SUPPORTS_HOG",
+            "PHYSFS_SUPPORTS_MVL",
+            "PHYSFS_SUPPORTS_WAD",
+            "PHYSFS_SUPPORTS_SLB",
+            "PHYSFS_SUPPORTS_ISO9660",
          },
          sources = {
             "lua-physfs.c",
