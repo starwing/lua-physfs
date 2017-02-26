@@ -137,5 +137,33 @@ function _G.testConv()
    eq(physfs.convInt(">8u", 4), 0x0400000000000000)
 end
 
+function _G.testLoader()
+   fail(".-physfs search path.*", require, "foobar")
+
+   local function test_mod(m)
+      eq(m.info(), "this is a test module from physfs")
+      eq(m.add(1,2), 3)
+   end
+   assert(physfs.mount "test_mod.zip")
+   test_mod(require "test_mod")
+
+   local fh = assert(physfs.openRead "test_mod.zip")
+   match(tostring(fh), "physfs.File: 0x%x+")
+   local fh2 = assert(physfs.mountFile(fh, nil, "test2"))
+   eq(fh, fh2)
+   match(tostring(fh), "physfs.File: %(null%)")
+   -- NOTICE there is a bug, if not given name to mount(File|Memory),
+   -- physfs libary has several bugs about exists and searchPath.
+   -- eq(physfs.exists("test2/test_mod.lua"), true) -- fail
+   test_mod(require "test2.test_mod")
+
+   fh = assert(physfs.openRead "test_mod.zip")
+   local content = assert(fh:read())
+   eq(#content, #fh)
+   assert(fh:close())
+   assert(physfs.mountMemory(content, nil, "test3"))
+   test_mod(require "test3.test_mod")
+end
+
 os.exit(lunit.LuaUnit.run(), true)
 

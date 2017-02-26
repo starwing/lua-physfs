@@ -65,8 +65,11 @@ static lua_Integer lua_tointegerx(lua_State *L, int idx, int *isint) {
 #if LUA_VERSION_NUM < 503
 static int lua53_getglobal(lua_State *L, const char *name)
 { lua_getglobal(L, name); return lua_type(L, -1); }
+static int lua53_getfield(lua_State *L, int idx, const char *name)
+{ lua_getfield(L, idx, name); return lua_type(L, -1); }
 #else
 # define lua53_getglobal lua_getglobal
+# define lua53_getfield  lua_getfield
 #endif
 
 #define return_self(L) do { lua_settop(L, 1); return 1; } while (0)
@@ -322,6 +325,80 @@ static void open_file(lua_State *L) {
 }
 
 
+/* physfs loader */
+
+static const char *checkfile(lua_State *L, const char *mod, PHYSFS_File **f) {
+    const char *name = luaL_gsub(L, mod, ".", PHYSFS_getDirSeparator());
+    luaL_Buffer B;
+    if ((*f = PHYSFS_openRead(name)) != NULL) return name;
+    lua_pushfstring(L, "%s.lua", name), name = lua_tostring(L, -1);
+    if ((*f = PHYSFS_openRead(name)) != NULL) return name;
+    lua_pushfstring(L, "%s.luac", name), name = lua_tostring(L, -1);
+    if ((*f = PHYSFS_openRead(name)) != NULL) return name;
+    lua_pop(L, 2), name = lua_tostring(L, -1);
+    luaL_buffinit(L, &B);
+    lua_pushfstring(L, "\n\tno file '%s' in physfs search path", name);
+    luaL_addvalue(&B);
+    lua_pushfstring(L, "\n\tno file '%s.lua' in physfs search path", name);
+    luaL_addvalue(&B);
+    lua_pushfstring(L, "\n\tno file '%s.luac' in physfs search path", name);
+    luaL_addvalue(&B);
+    luaL_pushresult(&B);
+    return NULL;
+}
+
+static int loaderror(lua_State *L, const char *name) {
+    return luaL_error(L, "error loading module '%s' from file '%s':\n"
+            "\tphysfs: %s", lua_tostring(L, 1), name, lua_tostring(L, -1));
+}
+
+static int Ltryload(lua_State *L) {
+    PHYSFS_File *f = (PHYSFS_File*)lua_touserdata(L, 1);
+    const char *name = lua_tostring(L, 2);
+    if (read_chars(L, f, ~(size_t)0)) {
+        size_t len;
+        const char *s = lua_tolstring(L, -1, &len);
+        lua_pushfstring(L, "@%s", name);
+        if (luaL_loadbuffer(L, s, len, lua_tostring(L, -1)) != LUA_OK)
+            return loaderror(L, name);
+        lua_pushvalue(L, 2);
+        return 2;
+    }
+    lua_pushstring(L, PHYSFS_getLastError());
+    return loaderror(L, name);
+}
+
+static int Lphysfs_loader(lua_State *L) {
+    const char *name = luaL_checkstring(L, 1);
+    PHYSFS_File *f;
+    int r;
+    if (!PHYSFS_isInit()) {
+        lua_pushstring(L, "physfs not init");
+        return 1;
+    }
+    if ((name = checkfile(L, name, &f)) == NULL)
+        return 1;
+    lua_pushcfunction(L, Ltryload);
+    lua_pushlightuserdata(L, f);
+    lua_pushvalue(L, -3);
+    r = lua_pcall(L, 2, 2, 0);
+    PHYSFS_close(f);
+    if (r != LUA_OK) lua_error(L);
+    return 2;
+}
+
+static void open_loader(lua_State *L) {
+    int pop = 1, r = lua53_getglobal(L, "package") == LUA_TTABLE
+        && ((++pop, lua53_getfield(L, -1, "searchers") == LUA_TTABLE)
+                || (++pop, lua53_getfield(L, -2, "loaders") == LUA_TTABLE));
+    if (r) {
+        lua_pushcfunction(L, Lphysfs_loader);
+        lua_rawseti(L, -2, lua_rawlen(L, -2) + 1);
+    }
+    lua_pop(L, pop);
+}
+
+
 /* physfs routines */
 
 static int push_list(lua_State *L, char **list, const char *fn);
@@ -525,8 +602,8 @@ static int Lstat(lua_State *L) {
 static int Lmount(lua_State *L) {
     const char *dir = luaL_checkstring(L, 1);
     const char *point = luaL_optstring(L, 2, NULL);
-    int append = !lua_toboolean(L, 3);
-    api("mount", mount(dir, point, append));
+    int prepend = lua_toboolean(L, 3);
+    api("mount", mount(dir, point, prepend));
     return_self(L);
 }
 
@@ -534,8 +611,8 @@ static int LmountFile(lua_State *L) {
     PHYSFS_File *file = check_file(L, 1);
     const char *name = luaL_optstring(L, 2, NULL);
     const char *point = luaL_optstring(L, 3, NULL);
-    int append = !lua_toboolean(L, 4);
-    api("mountFile", mountHandle(file, name, point, append));
+    int prepend = lua_toboolean(L, 4);
+    api("mountFile", mountHandle(file, name, point, prepend));
     *(PHYSFS_File**)lua_touserdata(L, 1) = NULL;
     return_self(L);
 }
@@ -545,11 +622,11 @@ static int LmountMemory(lua_State *L) {
     const char *s = luaL_checklstring(L, 1, &len);
     const char *name = luaL_optstring(L, 2, NULL);
     const char *point = luaL_optstring(L, 3, NULL);
-    int append = !lua_toboolean(L, 4);
+    int prepend = lua_toboolean(L, 4);
     void *data = malloc(len);
     if (data == NULL) luaL_error(L, "out of memory");
     memcpy(data, s, len);
-    if (!PHYSFS_mountMemory(data, len, free, name, point, append)) {
+    if (!PHYSFS_mountMemory(data, len, free, name, point, prepend)) {
         free(data);
         return push_error(L, "mountMemory");
     }
@@ -636,6 +713,7 @@ LUALIB_API int luaopen_physfs(lua_State *L) {
     if (!PHYSFS_init(getarg0(L)))
         luaL_error(L, "can not init physfs library");
     open_file(L);
+    open_loader(L);
     luaL_newlib(L, libs);
     lua_createtable(L, 0, 1);
     lua_pushcfunction(L, Ldeinit);
@@ -650,6 +728,6 @@ LUALIB_API int luaopen_physfs(lua_State *L) {
  * win32cc: flags+='-mdll -DLUA_BUILD_AS_DLL'
  * maccc: output="physfs.so" libs='-lphysfs' flags+='-undefined dynamic_lookup'
  * maccc: flags+='-shared -framework CoreServices -framework IOKit'
- * maccc: flags+='-I/usr/local/include/luajit-2.0'
+ * xmaccc: flags+='-I/usr/local/include/luajit-2.0'
  * cc: flags+='-Wextra -O3 -fprofile-arcs -ftest-coverage -pedantic -std=c89' */
 
