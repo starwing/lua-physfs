@@ -18,6 +18,7 @@ build = {
       macosx = {
          type = "command",
          build_command = "sh osxbuild.sh",
+         install = { lib = { physfs = "physfs.so" } }
       }
    },
    modules = {
