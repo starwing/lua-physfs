@@ -5,6 +5,9 @@ physfs binding for Lua
 lua-physfs is a [physfs][1] binding for the Lua language. it expose
 most physfs API, except the `mountIo()` and `register()` routines.
 
+[1]: https://github.com/icculus/physfs
+[2]: https://luarocks.org
+
 PhysicsFS is a library to provide abstract access to various archives. 
 
 to use this binding, easiest way is use [luarocks][2]:
