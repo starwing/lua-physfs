@@ -36,14 +36,14 @@ build = {
          sources = {
             "lua-physfs.c",
             "one.c",
-            "physfs_platform_android.c",
-            "physfs_platform_haiku.cpp",
-            "physfs_platform_os2.c",
-            "physfs_platform_posix.c",
-            "physfs_platform_qnx.c",
-            "physfs_platform_unix.c",
-            "physfs_platform_windows.c",
-            "physfs_platform_winrt.cpp",
+            "physfs/src/physfs_platform_android.c",
+            "physfs/src/physfs_platform_haiku.cpp",
+            "physfs/src/physfs_platform_os2.c",
+            "physfs/src/physfs_platform_posix.c",
+            "physfs/src/physfs_platform_qnx.c",
+            "physfs/src/physfs_platform_unix.c",
+            "physfs/src/physfs_platform_windows.c",
+            "physfs/src/physfs_platform_winrt.cpp",
          }
       }
    }
