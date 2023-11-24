@@ -1,6 +1,6 @@
 physfs binding for Lua
 ----------------------
-[![Build Status](https://travis-ci.org/starwing/lua-physfs.svg?branch=master)](https://travis-ci.org/starwing/lua-physfs)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/starwing/lua-physfs/test.yml?branch=master)](https://github.com/starwing/lua-physfs/actions?query=branch%3Amaster)[![Coverage Status](https://img.shields.io/coveralls/github/starwing/lua-physfs)](https://coveralls.io/github/starwing/lua-physfs?branch=master)
 
 lua-physfs is a [physfs][1] binding for the Lua language. it expose
 most physfs API, except the `mountIo()` and `register()` routines.

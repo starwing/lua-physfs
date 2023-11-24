@@ -49,7 +49,7 @@ jobs:
         run: |
           mkdir -p coverage
           lcov -c -d . -o coverage/lcov.info.all
-          lcov -r coverage/lcov.info.all '/usr/*' -o coverage/lcov.info
+          lcov -r coverage/lcov.info.all '/usr/*' 'physfs/src/*' -o coverage/lcov.info
       - name: Coveralls
         uses: coverallsapp/github-action@master
         with:
