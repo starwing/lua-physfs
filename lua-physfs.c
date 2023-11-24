@@ -2,7 +2,8 @@
 #include <lua.h>
 #include <lauxlib.h>
 
-#include "physfs/physfs.h"
+#define PHYSFS_STATIC
+#include "physfs/src/physfs.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +23,7 @@
     X(NO_SPACE)           X(BAD_FILENAME)     \
     X(BUSY)               X(DIR_NOT_EMPTY)    \
     X(OS_ERROR)           X(DUPLICATE)        \
-    X(BAD_PASSWORD)
+    X(BAD_PASSWORD)       X(APP_CALLBACK)
 
 
 /* utils */
@@ -364,7 +365,7 @@ static int Ltryload(lua_State *L) {
         lua_pushvalue(L, 2);
         return 2;
     }
-    lua_pushstring(L, PHYSFS_getLastError());
+    lua_pushstring(L, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
     return loaderror(L, name);
 }
 
@@ -609,10 +610,10 @@ static int Lmount(lua_State *L) {
 
 static int LmountFile(lua_State *L) {
     PHYSFS_File *file = check_file(L, 1);
-    const char *name = luaL_optstring(L, 2, NULL);
+    const char *name = luaL_checkstring(L, 2);
     const char *point = luaL_optstring(L, 3, NULL);
-    int prepend = lua_toboolean(L, 4);
-    api("mountFile", mountHandle(file, name, point, prepend));
+    int append = lua_toboolean(L, 4);
+    api("mountFile", mountHandle(file, name, point, !append));
     *(PHYSFS_File**)lua_touserdata(L, 1) = NULL;
     return_self(L);
 }
@@ -620,7 +621,7 @@ static int LmountFile(lua_State *L) {
 static int LmountMemory(lua_State *L) {
     size_t len;
     const char *s = luaL_checklstring(L, 1, &len);
-    const char *name = luaL_optstring(L, 2, NULL);
+    const char *name = luaL_checkstring(L, 2);
     const char *point = luaL_optstring(L, 3, NULL);
     int prepend = lua_toboolean(L, 4);
     void *data = malloc(len);
@@ -724,10 +725,8 @@ LUALIB_API int luaopen_physfs(lua_State *L) {
     return 1;
 }
 
-/* win32cc: output="physfs.dll" libs='-llua53 libphysfs.a'
+/* win32cc: output="physfs.dll" libs='-llua54 libphysfs.a'
  * win32cc: flags+='-mdll -DLUA_BUILD_AS_DLL'
- * maccc: output="physfs.so" libs='-lphysfs' flags+='-undefined dynamic_lookup'
+ * maccc: output="physfs.so" libs='libphysfs.a' flags+='-undefined dynamic_lookup'
  * maccc: flags+='-shared -framework CoreServices -framework IOKit'
- * xmaccc: flags+='-I/usr/local/include/luajit-2.0'
  * cc: flags+='-Wextra -O3 -fprofile-arcs -ftest-coverage -pedantic -std=c89' */
-

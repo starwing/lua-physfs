@@ -4,3 +4,5 @@
 *.dll
 *.so
 *.o
+*.a
+tags

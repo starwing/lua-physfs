@@ -149,7 +149,7 @@ function _G.testLoader()
 
    local fh = assert(physfs.openRead "test_mod.zip")
    match(tostring(fh), "physfs.File: 0x%x+")
-   local fh2 = assert(physfs.mountFile(fh, nil, "test2"))
+   local fh2 = assert(physfs.mountFile(fh, "fn2", "test2"))
    eq(fh, fh2)
    match(tostring(fh), "physfs.File: %(null%)")
    -- NOTICE there is a bug, if not given name to mount(File|Memory),
@@ -161,7 +161,7 @@ function _G.testLoader()
    local content = assert(fh:read())
    eq(#content, #fh)
    assert(fh:close())
-   assert(physfs.mountMemory(content, nil, "test3"))
+   assert(physfs.mountMemory(content, "content", "test3"))
    test_mod(require "test3.test_mod")
 end
 
