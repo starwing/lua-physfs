@@ -32,6 +32,9 @@
 # define LUA_OK                    0
 # define lua_rawlen                lua_objlen
 # define luaL_setfuncs(L,libs,nup) luaL_register(L, NULL, libs)
+ 
+#ifndef LUA_GCISRUNNING /* not LuaJIT 2.1 */
+
 #define luaL_newlibtable(L,l)      \
     lua_createtable(L, 0, sizeof(l)/sizeof((l)[0]) - 1)
 #define luaL_newlib(L,l)           \
@@ -60,6 +63,8 @@ static lua_Integer lua_tointegerx(lua_State *L, int idx, int *isint) {
     if (isint) *isint = v != 0 || lua_type(L, idx) == LUA_TNUMBER;
     return v;
 }
+
+#endif /* not LuaJIT 2.1 */
 
 #endif
 
