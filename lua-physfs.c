@@ -716,7 +716,7 @@ LUALIB_API int luaopen_physfs(lua_State *L) {
 #undef  ENTRY
         { NULL, NULL }
     };
-    if (!PHYSFS_init(getarg0(L)))
+    if (!PHYSFS_isInit() && !PHYSFS_init(getarg0(L)))
         luaL_error(L, "can not init physfs library");
     open_file(L);
     open_loader(L);
